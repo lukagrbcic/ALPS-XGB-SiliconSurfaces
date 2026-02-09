@@ -14,6 +14,7 @@ The dataset (in .npy format) used to train and test the models can be found in t
 
 Moreover, the results will be saved in inverse_design_results for running the ALPS+XGBoost combined model (**inverse_design_results.py**), and model_results for analyzing either Linear Regression or XGBoost (**kfold_analysis.py**).
 
+The full dataset can also be found in the folder data, as well as the full wavelengths file.
 _______
 **MODEL ANALYSIS CODE DESCRIPTION**
 _______
