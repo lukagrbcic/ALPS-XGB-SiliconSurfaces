@@ -49,13 +49,16 @@ class model_analysis:
                 ])
             
             else:
+
+                
                 model = xgb.XGBRegressor(
                             objective='reg:squarederror',
                             n_estimators=500, 
-                            reg_lambda=2, #2
+                            reg_lambda=20,
                             learning_rate=0.05, 
-                            max_depth=5, early_stopping_rounds=5
-                                                        )
+                            max_depth=5, early_stopping_rounds=5,
+                            #random_state=111
+                            )
             
             
             rrmse_mean = []
@@ -92,7 +95,6 @@ class model_analysis:
                     else:
                         model.fit(X_train_, y_train_,
                                 eval_set=[(X_train_, y_train_), (X_val, y_val)],
-                                 #early_stopping_rounds=5,
                                 verbose=False
                              )
                     
@@ -122,8 +124,8 @@ class model_analysis:
             
 
             
-            rrmse_mean = np.array(rrmse_mean)*100
-            rrmse_std = np.array(rrmse_std)*100 
+            rrmse_mean = np.array(rrmse_mean)#*100
+            rrmse_std = np.array(rrmse_std)#*100 
             np.savetxt(f'model_results/results_learning_curve_{self.data}_{self.model}.txt', results, fmt='%.3f')
          
         else:
@@ -133,22 +135,22 @@ class model_analysis:
             if self.model == 'lr':
                 model = Pipeline([
                     ('scaler', StandardScaler()),                          # Step to standardize the features
-                    ('multi_output_regressor', MultiOutputRegressor(LinearRegression()))  # Step to perform multi-output linear regression
+                    ('multi_output_regressor', MultiOutputRegressor(LinearRegression(random_state=111)))  # Step to perform multi-output linear regression
                 ])
             
             else:
                 
+
                 model = xgb.XGBRegressor(
                             objective='reg:squarederror',
                             n_estimators=500, 
-                            reg_lambda=2,
+                            reg_lambda=20,
                             learning_rate=0.05, 
-                            max_depth=5, early_stopping_rounds=5
+                            max_depth=5, early_stopping_rounds=5,
+                            random_state=111
                             )
             
- 
-                        
-            
+             
             X_train, X_test, y_train, y_test = train_test_split(self.input_train, 
                                                                 self.output_train,
                                                                 test_size=0.3, shuffle=False, random_state=23) 
@@ -158,7 +160,10 @@ class model_analysis:
                                                                 test_size=0.1, shuffle=False, random_state=23) 
                        
            
+            
            
+            
+            
             # """this is for linear regression"""
             if self.model == 'lr':
                 model.fit(X_train_, y_train_)
@@ -166,9 +171,11 @@ class model_analysis:
             else:
                 model.fit(X_train_, y_train_,
                         eval_set=[(X_train_, y_train_), (X_val, y_val)],
-                          #early_stopping_rounds=5,
                         verbose=False
                          )
+                
+                # Save training curves for XGBoost in histogram analysis
+                self.plot_training_curves(model, self.fraction)
                   
  
             
@@ -182,8 +189,47 @@ class model_analysis:
 
 
             results_dict = {'analysis': 'hist', 'rmse_values': rmse_list, 'data': self.data}
+            
+            
+            
         
         return results_dict
+
+    def plot_training_curves(self, model, fraction):
+        """Plot and save training and validation loss curves for XGBoost"""
+        
+        results = model.evals_result()
+        train_rmse = np.sqrt(results['validation_0']['rmse'])
+        val_rmse = np.sqrt(results['validation_1']['rmse'])
+        
+        estimators = np.arange(len(train_rmse))
+        
+        # Determine dataset name
+        if self.data == 'transmittance':
+            name = 'Transmittance'
+        else:
+            name = 'Reflectance'
+        
+        plt.figure(figsize=(6, 5))
+        plt.plot(estimators, train_rmse, label='Train', linewidth=2)
+        plt.plot(estimators, val_rmse, label='Validation', linewidth=2)
+        plt.xlabel('Estimators')
+        plt.ylabel('RMSE (\%)')
+        plt.title(f'{name}, {fraction*100:.1f}\% train data')
+        plt.legend(fontsize=18)
+        plt.ylim(0, 3)
+        
+        ax = plt.gca()
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(2)
+        
+        plt.tight_layout()
+        
+        # Save the figure
+        plt.savefig(f'model_results/training_curves_{self.data}_{fraction}_{self.model}.pdf', dpi=400)
+        plt.savefig(f'model_results/training_curves_{self.data}_{fraction}_{self.model}.png', dpi=400)
+        plt.savefig(f'model_results/training_curves_{self.data}_{fraction}_{self.model}.eps', dpi=400)
+        plt.close()
 
         
     def plot_results(self, results):
@@ -194,8 +240,8 @@ class model_analysis:
         if results[0]['analysis'] == 'lc':
             for i in range(len(results)):
                 
-                rrmse_mean = results[i]['rmse_mean']*100
-                rrmse_std = results[i]['rmse_std']*100
+                rrmse_mean = results[i]['rmse_mean']
+                rrmse_std = results[i]['rmse_std']
                 data_size = results[i]['data_size']
                 data = results[i]['data']
                 if data == 'transmittance':
@@ -228,7 +274,7 @@ class model_analysis:
         else:
             for i in range(len(results)):
                 
-                rmse_list = results[i]['rmse_values']*100
+                rmse_list = results[i]['rmse_values']#*100
                 data = results[i]['data']
                 if data == 'transmittance':
                     name = 'Transmittance'
@@ -261,12 +307,12 @@ class model_analysis:
             
 data = 'transmittance'
 input_train = np.load('train_data/laser_parameters_train.npy')
-m = 10
+m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
 input_test = np.load('test_data/laser_parameters_test.npy')
 results = []
-trans_results = model_analysis('lc', data, input_train, output_train/100)
+trans_results = model_analysis('lc', data, input_train, output_train)
 results_transmittance = trans_results.get_results()
 results.append(results_transmittance)
 trans_results.plot_results(results)
@@ -274,12 +320,12 @@ trans_results.plot_results(results)
 data = 'reflectance'
 
 input_train = np.load('train_data/laser_parameters_train.npy')
-m = 10
+m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
 
 
-refl_results = model_analysis('lc', data, input_train, output_train/100)
+refl_results = model_analysis('lc', data, input_train, output_train)
 results_reflectance = refl_results.get_results()
 results.append(results_reflectance)
 refl_results.plot_results(results)
@@ -287,13 +333,13 @@ refl_results.plot_results(results)
             
 data = 'transmittance'
 input_train = np.load('train_data/laser_parameters_train.npy')
-m = 10
+m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
 
 results = []
 
-trans_results = model_analysis('hist', data, input_train, output_train/100, fraction=1, model='lr')
+trans_results = model_analysis('hist', data, input_train, output_train, fraction=1)#, model='lr')
 results_transmittance = trans_results.get_results()
 
 results.append(results_transmittance)
@@ -304,16 +350,14 @@ trans_results.plot_results(results)
 data = 'reflectance'
 
 input_train = np.load('train_data/laser_parameters_train.npy')
-m = 10
+m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 results = []
 
 
-refl_results = model_analysis('hist', data, input_train, output_train/100, fraction=1, model='lr')
+refl_results = model_analysis('hist', data, input_train, output_train, fraction=1)#, model='lr')
 results_reflectance = refl_results.get_results()
 
 results.append(results_reflectance)
 
-refl_results.plot_results(results) 
-        
-        
+refl_results.plot_results(results)
