@@ -4,3 +4,7 @@
 *zip
 *.eps
 *.pdf
+*.png
+*.txt
+*.CSV
+*.dat
