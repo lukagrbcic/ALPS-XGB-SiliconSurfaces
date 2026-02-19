@@ -69,8 +69,8 @@ class model_analysis:
             for size in data_size:
                 print ('Data size:', size)
 
-                input_train = self.input_train[:int(size*len(self.input_train))]
-                output_train = self.output_train[:int(size*len(self.output_train))]
+                input_train_subset = self.input_train[:int(size*len(self.input_train))]
+                output_train_subset = self.output_train[:int(size*len(self.output_train))]
                 
     
     
@@ -79,8 +79,8 @@ class model_analysis:
                 for i in range(k):
                                         
                     
-                    X_train, X_test, y_train, y_test = train_test_split(input_train, 
-                                                                        output_train,
+                    X_train, X_test, y_train, y_test = train_test_split(input_train_subset, 
+                                                                        output_train_subset,
                                                                         test_size=float(1/k)) 
                     
                     X_train_, X_val, y_train_, y_val = train_test_split(X_train, 
@@ -135,7 +135,7 @@ class model_analysis:
             if self.model == 'lr':
                 model = Pipeline([
                     ('scaler', StandardScaler()),                          # Step to standardize the features
-                    ('multi_output_regressor', MultiOutputRegressor(LinearRegression(random_state=111)))  # Step to perform multi-output linear regression
+                    ('multi_output_regressor', MultiOutputRegressor(LinearRegression()))  # Step to perform multi-output linear regression
                 ])
             
             else:
@@ -184,8 +184,8 @@ class model_analysis:
             rmse_list = np.array([np.sqrt(mean_squared_error(y_test[i], y_pred[i])) for i in range(len(y_pred))])
             rmse_mean_list = np.array([np.mean(rmse_list), np.max(rmse_list), np.std(rmse_list)])
             np.savetxt(f'model_results/results_histogram_{self.data}_{self.model}', rmse_mean_list, fmt='%.3f')
-            np.savetxt(f'model_results/test_set_{self.data}_{self.fraction}_{self.model}.dat', y_pred, fmt='%.3f')
-            np.savetxt(f'model_results/predicted_set_{self.data}_{self.fraction}_{self.model}.dat', y_test, fmt='%.3f')
+            np.savetxt(f'model_results/test_set_{self.data}_{self.fraction}_{self.model}.dat', y_test, fmt='%.3f')
+            np.savetxt(f'model_results/predicted_set_{self.data}_{self.fraction}_{self.model}.dat', y_pred, fmt='%.3f')
 
 
             results_dict = {'analysis': 'hist', 'rmse_values': rmse_list, 'data': self.data}
@@ -230,6 +230,53 @@ class model_analysis:
         plt.savefig(f'model_results/training_curves_{self.data}_{fraction}_{self.model}.png', dpi=400)
         plt.savefig(f'model_results/training_curves_{self.data}_{fraction}_{self.model}.eps', dpi=400)
         plt.close()
+        
+    def get_trained_model(self):
+        """Train and return the final model for prediction"""
+        
+        if self.model == 'lr':
+            model = Pipeline([
+                ('scaler', StandardScaler()),
+                ('multi_output_regressor', MultiOutputRegressor(LinearRegression(random_state=111)))
+            ])
+        else:
+            model = xgb.XGBRegressor(
+                objective='reg:squarederror',
+                n_estimators=500, 
+                reg_lambda=20,
+                learning_rate=0.05, 
+                max_depth=5, 
+                early_stopping_rounds=5,
+                random_state=111
+            )
+        
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.input_train, 
+            self.output_train,
+            test_size=0.3, 
+            shuffle=False, 
+            random_state=23
+        ) 
+    
+        X_train_, X_val, y_train_, y_val = train_test_split(
+            X_train[:int(self.fraction*len(X_train))], 
+            y_train[:int(self.fraction*len(y_train))],
+            test_size=0.1, 
+            shuffle=False, 
+            random_state=23
+        ) 
+        
+        if self.model == 'lr':
+            model.fit(X_train_, y_train_)
+        else:
+            model.fit(
+                X_train_, y_train_,
+                eval_set=[(X_train_, y_train_), (X_val, y_val)],
+                verbose=False
+            )
+        
+        return model
+
 
         
     def plot_results(self, results):
@@ -305,41 +352,39 @@ class model_analysis:
 
 
             
-data = 'transmittance'
-input_train = np.load('train_data/laser_parameters_train.npy')
-m = 20
-output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
+# data = 'transmittance'
+# input_train = np.load('train_data/laser_parameters_train.npy')
+# m = 20
+# output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
-input_test = np.load('test_data/laser_parameters_test.npy')
-results = []
-trans_results = model_analysis('lc', data, input_train, output_train)
-results_transmittance = trans_results.get_results()
-results.append(results_transmittance)
-trans_results.plot_results(results)
+# input_test = np.load('test_data/laser_parameters_test.npy')
+# results = []
+# trans_results = model_analysis('lc', data, input_train, output_train)
+# results_transmittance = trans_results.get_results()
+# results.append(results_transmittance)
+# trans_results.plot_results(results)
 
-data = 'reflectance'
+# data = 'reflectance'
 
-input_train = np.load('train_data/laser_parameters_train.npy')
-m = 20
-output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
+# input_train = np.load('train_data/laser_parameters_train.npy')
+# m = 20
+# output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
 
 
-refl_results = model_analysis('lc', data, input_train, output_train)
-results_reflectance = refl_results.get_results()
-results.append(results_reflectance)
-refl_results.plot_results(results)
+# refl_results = model_analysis('lc', data, input_train, output_train)
+# results_reflectance = refl_results.get_results()
+# results.append(results_reflectance)
+# refl_results.plot_results(results)
 
             
 data = 'transmittance'
 input_train = np.load('train_data/laser_parameters_train.npy')
 m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
-
-
 results = []
 
-trans_results = model_analysis('hist', data, input_train, output_train, fraction=1)#, model='lr')
+trans_results = model_analysis('hist', data, input_train, output_train, fraction=1, model='lr')
 results_transmittance = trans_results.get_results()
 
 results.append(results_transmittance)
@@ -348,16 +393,97 @@ trans_results.plot_results(results)
 
 
 data = 'reflectance'
-
 input_train = np.load('train_data/laser_parameters_train.npy')
 m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 results = []
 
 
-refl_results = model_analysis('hist', data, input_train, output_train, fraction=1)#, model='lr')
+refl_results = model_analysis('hist', data, input_train, output_train, fraction=1, model='lr')
 results_reflectance = refl_results.get_results()
 
 results.append(results_reflectance)
 
 refl_results.plot_results(results)
+
+
+
+
+def plot_absorbance_map_smooth(lb=[110., 1.], ub=[300., 42.], 
+                               grid_points=200, model_type='xgb', fraction=1):
+    """
+    Create smooth absorbance map using a regular grid
+    """
+    
+    # [Same training code as before...]
+    print("Training transmittance model...")
+    input_train = np.load('train_data/laser_parameters_train.npy')
+    m = 20
+    output_train_trans = np.load('train_data/transmittance_train.npy')[:, ::m]
+    
+    trans_analysis = model_analysis('hist', 'transmittance', input_train, 
+                                    output_train_trans, fraction=fraction, model=model_type)
+    transmittance_model = trans_analysis.get_trained_model()
+    
+    print("Training reflectance model...")
+    output_train_refl = np.load('train_data/reflectance_train.npy')[:, ::m]
+    
+    refl_analysis = model_analysis('hist', 'reflectance', input_train, 
+                                   output_train_refl, fraction=fraction, model=model_type)
+    reflectance_model = refl_analysis.get_trained_model()
+    
+    # Create regular grid
+    print("Creating grid...")
+    speed_range = np.linspace(lb[0], ub[0], grid_points)
+    spacing_range = np.linspace(lb[1], ub[1], grid_points)
+    speed_grid, spacing_grid = np.meshgrid(speed_range, spacing_range)
+    
+    laser_parameters_grid = np.column_stack([speed_grid.ravel(), spacing_grid.ravel()])
+    
+    # Predict
+    print("Generating predictions...")
+    avg_transmittance = np.mean(transmittance_model.predict(laser_parameters_grid), axis=1)
+    avg_ref = np.mean(reflectance_model.predict(laser_parameters_grid), axis=1)
+    
+    absorbance_mean = 100 - avg_ref - avg_transmittance
+    absorbance_grid = absorbance_mean.reshape(speed_grid.shape)
+    
+    # Create smooth contour plot
+    print("Creating plot...")
+    plt.figure(figsize=(6, 5))
+    
+    # More levels for smoother gradients
+    contour_filled = plt.contourf(speed_grid, spacing_grid, absorbance_grid, 
+                                  levels=50, cmap='plasma')  # Increased from 20 to 50
+    
+    cbar = plt.colorbar(contour_filled)
+    cbar.set_label('Mean absorbance (\%)')
+    
+    plt.xlabel(r'Speed ($\upmu$m/s)')
+    plt.ylabel(r'Spacing ($\upmu$m)')
+    
+    ax = plt.gca()
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(2)
+    
+    plt.tight_layout()
+    
+    plt.savefig(f'model_results/absorbance_map_smooth_{model_type}_frac{fraction}.pdf', dpi=400)
+    plt.savefig(f'model_results/absorbance_map_smooth_{model_type}_frac{fraction}.png', dpi=400)
+    plt.savefig(f'model_results/absorbance_map_smooth_{model_type}_frac{fraction}.eps', dpi=400)
+    plt.show()
+    
+    print(f"Absorbance statistics:")
+    print(f"  Mean: {np.mean(absorbance_mean):.2f}%")
+    print(f"  Std: {np.std(absorbance_mean):.2f}%")
+    print(f"  Min: {np.min(absorbance_mean):.2f}%")
+    print(f"  Max: {np.max(absorbance_mean):.2f}%")
+# After all your existing code, add:
+
+# # Plot absorbance map using trained models
+# print("\n" + "="*80)
+# print("CREATING ABSORBANCE MAP")
+# print("="*80)
+
+# plot_absorbance_map_smooth(grid_points=150, model_type='xgb', fraction=1)
+

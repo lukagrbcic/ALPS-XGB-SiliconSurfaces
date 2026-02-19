@@ -63,27 +63,27 @@ class inverseDesignAnalysis:
         transmittance = np.vstack((transmittance_train, transmittance_test))*100
         
         
-        absorbance = 100 - transmittance - reflectance
-        target_absorbance = np.ones(len(self.wavelengths))*100
+        absorptance = 100 - transmittance - reflectance
+        target_absorptance = np.ones(len(self.wavelengths))*100
 
-        epsilon = np.array([np.sqrt(mean_squared_error(absorbance[i], target_absorbance)) for i in range(len(absorbance))])
+        epsilon = np.array([np.sqrt(mean_squared_error(absorptance[i], target_absorptance)) for i in range(len(absorptance))])
         sorted_epsilon = np.argmin(epsilon)
 
         laser_parameters_sorted = laser_parameters[sorted_epsilon, :]
-        absorbance_curves = absorbance[sorted_epsilon, :]
+        absorptance_curves = absorptance[sorted_epsilon, :]
 
         
-        return laser_parameters, absorbance
+        return laser_parameters, absorptance
 
     def find_test_set_parameters(self, laser_parameters_sorted):
         
         
         laser_parameters_test = self.test_data_r[0]
-        transmittance_test = self.test_data_t[1]*100
-        reflectance_test = self.test_data_r[1]*100
+        transmittance_test = self.test_data_t[1]#*100
+        reflectance_test = self.test_data_r[1]#*100
         
         
-        absorbance_test = 100 - transmittance_test - reflectance_test
+        absorptance_test = 100 - transmittance_test - reflectance_test
         
         epsilon_index = []
         
@@ -103,10 +103,10 @@ class inverseDesignAnalysis:
             
         ind_ = np.unique(epsilon_index)
         laser_parameters_ = laser_parameters_test[ind_]
-        absorbance_ = absorbance_test[ind_]
+        absorptance_ = absorptance_test[ind_]
         
         
-        return laser_parameters_, absorbance_
+        return laser_parameters_, absorptance_
         
         
         
@@ -114,9 +114,11 @@ class inverseDesignAnalysis:
         
         X, y = data[0], data[1]
         
-        input_train = X[:int(self.p*len(X))]
-        output_train = y[:int(self.p*len(y))]
+        self.input_train = X[:int(self.p*len(X))]
+        self.output_train = y[:int(self.p*len(y))]
         
+        input_train = self.input_train
+        output_train = self.output_train
         print (len(input_train))
         
         X_train, X_val, y_train, y_val = train_test_split(input_train, 
@@ -125,10 +127,11 @@ class inverseDesignAnalysis:
         
         model = xgb.XGBRegressor(
                     objective='reg:squarederror',
-                    n_estimators=500, 
-                    reg_lambda=2,
+                    n_estimators=500,
+                    reg_lambda=20,
                     learning_rate=0.05, 
-                    max_depth=5, early_stopping_rounds=5
+                    max_depth=5, early_stopping_rounds=5,
+                    random_state=111
                     )
         
         model.fit(X_train, y_train,
@@ -137,38 +140,38 @@ class inverseDesignAnalysis:
                  )
         
         
-        evals_result = model.evals_result()
-        epochs = len(evals_result['validation_0']['rmse'])
-        x_axis = range(0, epochs)
+        # evals_result = model.evals_result()
+        # epochs = len(evals_result['validation_0']['rmse'])
+        # x_axis = range(0, epochs)
         
 
-        plt.figure(figsize=(6,5))
-        percetange_ = self.p*100
-        plt.title(f'{output}, {percetange_}\% train data')
+        # plt.figure(figsize=(6,5))
+        # percetange_ = self.p#*100
+        # plt.title(f'{output}, {percetange_}\% train data')
         
-        train_rmse = np.array(evals_result['validation_0']['rmse'])*100
-        validation_rmse = np.array(evals_result['validation_1']['rmse'])*100
+        # train_rmse = np.array(evals_result['validation_0']['rmse'])#*100
+        # validation_rmse = np.array(evals_result['validation_1']['rmse'])#*100
             
-        plt.plot(x_axis, train_rmse, label='Train')
-        plt.plot(x_axis, validation_rmse, label='Validation')
+        # plt.plot(x_axis, train_rmse, label='Train')
+        # plt.plot(x_axis, validation_rmse, label='Validation')
         
-        plt.legend()
-        plt.ylabel('RMSE (\%)')
-        plt.xlabel('Estimators')
-        plt.ylim(0, 3)
-        ax = plt.gca()
+        # plt.legend()
+        # plt.ylabel('RMSE (\%)')
+        # plt.xlabel('Estimators')
+        # plt.ylim(0, 3)
+        # ax = plt.gca()
 
-        for axis in ['top', 'bottom', 'left', 'right']:
-          ax.spines[axis].set_linewidth(2)
+        # for axis in ['top', 'bottom', 'left', 'right']:
+        #   ax.spines[axis].set_linewidth(2)
         
-        plt.tight_layout()
+        # plt.tight_layout()
         
-        plt.savefig(f'inverse_design_results/loss_curve_{output}_{self.p}_model_result.pdf', dpi=400)
-        plt.savefig(f'inverse_design_results/loss_curve_{output}_{self.p}_model_result.eps', dpi=400)
-        plt.savefig(f'inverse_design_results/loss_curve_{output}_{self.p}_model_result.png', dpi=400)
+        # plt.savefig(f'inverse_design_results/loss_curve_{output}_{self.p}_model_result.pdf', dpi=400)
+        # plt.savefig(f'inverse_design_results/loss_curve_{output}_{self.p}_model_result.eps', dpi=400)
+        # plt.savefig(f'inverse_design_results/loss_curve_{output}_{self.p}_model_result.png', dpi=400)
 
-        if save_model == True:
-            joblib.dump(f'inverse_design_models/{output}_model_{self.p}.pkl')
+        # if save_model == True:
+        #     joblib.dump(f'inverse_design_models/{output}_model_{self.p}.pkl')
         
         return model
     
@@ -190,37 +193,33 @@ class inverseDesignAnalysis:
         
         transmittance_model, reflectance_model = self.get_models()
         
-        """Generating an absorbance map"""      
+        # """Generating an absorptance map"""      
         
         laser_parameters = self.train_data_t[0]
         upper_bounds = np.max(laser_parameters, axis=0)
         lower_bounds = np.min(laser_parameters, axis=0)
-        laser_parameters_pdp = np.random.uniform(lower_bounds, upper_bounds, size=(20000, len(lower_bounds)))
+        # laser_parameters_pdp = np.random.uniform(lower_bounds, upper_bounds, size=(20000, len(lower_bounds)))
         
     
-        transmittance_values = transmittance_model.predict(laser_parameters_pdp)
-        reflectance_values = reflectance_model.predict(laser_parameters_pdp)
+        # transmittance_values = transmittance_model.predict(laser_parameters_pdp)
+        # reflectance_values = reflectance_model.predict(laser_parameters_pdp)
         
         
-        absorbance_values = 1 - transmittance_values - reflectance_values 
-        mean_absorbance = np.mean(absorbance_values, axis=1)*100
+        #absorptance_values = 100 - transmittance_values - reflectance_values
+        # mean_absorptance = np.mean(absorptance_values, axis=1)#*100
         
-
-        
-        
-        
-        
+             
         # """PDP plot"""
         
         # plt.figure(figsize=(6,5))
-        # contour = plt.scatter(laser_parameters_pdp[:, 0], laser_parameters_pdp[:,1], c=mean_absorbance, cmap='plasma')
+        # contour = plt.scatter(laser_parameters_pdp[:, 0], laser_parameters_pdp[:,1], c=mean_absorptance, cmap='plasma')
         # cbar = plt.colorbar(contour)
-        # cbar.set_label('Mean absorbance (\%)')#, rotation=270, labelpad=15)
+        # cbar.set_label('Mean absorptance (\%)')#, rotation=270, labelpad=15)
 
         # rect = Rectangle((299, 0), 201, 43, linewidth=1, edgecolor='none', facecolor='white')
 
         # plt.gca().add_patch(rect)
-        # plt.xlabel(r'Speed ($\upmu$m/s)')
+        # plt.xlabel(r'Speed (mm/s)')
         # plt.ylabel(r'Spacing ($\upmu$m)')
 
         # ax = plt.gca()
@@ -234,17 +233,17 @@ class inverseDesignAnalysis:
 
         # """Experimental data plot"""
         
-        # laser_parameters_exp, absorbance_exp = self.experimental_dataset()
+        # laser_parameters_exp, absorptance_exp = self.experimental_dataset()
                 
         # plt.figure(figsize=(6,5))
-        # contour = plt.scatter(laser_parameters_exp[:, 0], laser_parameters_exp[:,1], c=np.mean(absorbance_exp, axis=1), cmap='plasma')
+        # contour = plt.scatter(laser_parameters_exp[:, 0], laser_parameters_exp[:,1], c=np.mean(absorptance_exp, axis=1), cmap='plasma')
         # cbar = plt.colorbar(contour)
-        # cbar.set_label('Mean absorbance (\%)')#, rotation=270, labelpad=15)
+        # cbar.set_label('Mean absorptance (\%)')#, rotation=270, labelpad=15)
 
         # # rect = Rectangle((299, 0), 201, #res:ner-page=543, linewidth=1, edgecolor='none', facecolor='white')
 
         # # plt.gca().add_patch(rect)
-        # plt.xlabel(r'Speed ($\upmu$m/s)')
+        # plt.xlabel(r'Speed (mm/s)')
         # plt.ylabel(r'Spacing ($\upmu$m)')
 
         # ax = plt.gca()
@@ -256,17 +255,17 @@ class inverseDesignAnalysis:
 
     
 
-        """Inverse design - measuring discrepancy based on the 100% absorbance target"""
+        """Inverse design - measuring discrepancy based on the 100% absorptance target"""
         
-        target_absorbance = np.ones(len(self.wavelengths))
+        target_absorptance = np.ones(len(self.wavelengths))*100
 
-        epsilon = np.array([np.sqrt(mean_squared_error(absorbance_values[i], target_absorbance)) for i in range(len(absorbance_values))])
-        sorted_epsilon = np.argsort(epsilon)[:self.n]
-        epsilon_values = epsilon[sorted_epsilon]
-        print ('rs', epsilon_values)
+        # epsilon = np.array([np.sqrt(mean_squared_error(absorptance_values[i], target_absorptance)) for i in range(len(absorptance_values))])
+        # sorted_epsilon = np.argsort(epsilon)[:self.n]
+        # epsilon_values = epsilon[sorted_epsilon]
+        # print ('rs', epsilon_values)
 
-        laser_parameters_sorted = laser_parameters_pdp[sorted_epsilon, :]
-        absorbance_curves = absorbance_values[sorted_epsilon, :]
+        # laser_parameters_sorted = laser_parameters_pdp[sorted_epsilon, :]
+        # absorptance_curves = absorptance_values[sorted_epsilon, :]
         
         laser_parameters_sorted = []
         eps_val = []
@@ -277,15 +276,15 @@ class inverseDesignAnalysis:
                 transmittance_values = transmittance_model.predict([x])
                 reflectance_values = reflectance_model.predict([x])
                 
-                absorbance_eval = 1 - transmittance_values[0] - reflectance_values[0]
+                absorptance_eval = 100 - transmittance_values[0] - reflectance_values[0]
                 
-                epsilon = np.sqrt(mean_squared_error(target_absorbance, absorbance_eval))
+                epsilon = np.sqrt(mean_squared_error(target_absorptance, absorptance_eval))
                 
                 
-                return epsilon, absorbance_eval.reshape(1,-1)
+                return epsilon, absorptance_eval.reshape(1,-1)
 
-            test_full = ALPS(target=target_absorbance, 
-            max_evals=400, 
+            test_full = ALPS(target=target_absorptance, 
+            max_evals=100, 
             initial_sample_size=5, 
             model_batch_size=5, 
             lb=lower_bounds, 
@@ -297,19 +296,36 @@ class inverseDesignAnalysis:
             eps_val.append(fitness_)
             
         laser_parameters_sorted = np.array(laser_parameters_sorted)
+        
+        absorptance_curves = []
+        
+        transmittance_curves = transmittance_model.predict(laser_parameters_sorted)
+        reflectance_curves = reflectance_model.predict(laser_parameters_sorted)
+        
+        absorptance_curves = 100 - transmittance_curves - reflectance_curves
+        
+        
+        """Model validation absorptance plot"""
+                
+        for i in range(len(laser_parameters_sorted)):
+            print (f'Model absorptance rmse, percentage {self.p}')
+            print ('Speed', laser_parameters_sorted[i,0], 'Spacing', laser_parameters_sorted[i,0], np.sqrt(mean_squared_error(target_absorptance, absorptance_curves[i])))
+            
         print ('epsilon value', np.sort(eps_val))
         percentage_ = self.p*100
 
         # plt.plot(laser_parameters_sorted[:, 0], laser_parameters_sorted[:,1], 'kx')
         
         plt.figure(figsize=(6,5))
-        for i in range(len(absorbance_curves)):
+        for i in range(len(absorptance_curves)):
             speed = laser_parameters_sorted[i, 0]
             spacing = laser_parameters_sorted[i, 1]
-            plt.plot(wavelengths, absorbance_curves[i,:]*100, alpha=0.5, linewidth=3, label=f'{speed:.2f}' + r' $\upmu$m/s,' + f' {spacing:.2f}' + r' $\upmu$m')
+            plt.plot(wavelengths, absorptance_curves[i,:], alpha=0.5, linewidth=3, label=f'{speed:.2f}' + r' mm/s,' + f' {spacing:.2f}' + r' $\upmu$m')
                        
         plt.xlabel(r'Wavelength ($\upmu$m)')
-        plt.ylabel('Absorbance (\%)')
+        plt.ylabel('Absorptance (\%)')
+        plt.title('Model prediction')
+
         plt.title('%0.f' % percentage_ + '\% train data, model prediction')
         plt.ylim(0, 100)
         plt.legend()
@@ -320,40 +336,45 @@ class inverseDesignAnalysis:
           ax.spines[axis].set_linewidth(2)
 
         plt.tight_layout()
-        plt.savefig(f'inverse_design_results/absorbance_curves_{percentage_}_prediction_result.pdf', dpi=400)
-        plt.savefig(f'inverse_design_results/absorbance_curves_{percentage_}_prediction_result.eps', dpi=400)
-        plt.savefig(f'inverse_design_results/absorbance_curves_{percentage_}_prediction_result.png', dpi=400)
+        plt.savefig(f'inverse_design_results/absorptance_curves_{percentage_}_prediction_result.pdf', dpi=400)
+        plt.savefig(f'inverse_design_results/absorptance_curves_{percentage_}_prediction_result.eps', dpi=400)
+        plt.savefig(f'inverse_design_results/absorptance_curves_{percentage_}_prediction_result.png', dpi=400)
         
         
-        """Experimental validation absorbance plot"""
+        """Experimental validation absorptance plot"""
         
-        laser_parameters_, absorbance_ = self.find_test_set_parameters(laser_parameters_sorted)
+        laser_parameters_, absorptance_ = self.find_test_set_parameters(laser_parameters_sorted)
+        
+        for i in range(len(laser_parameters_)):
+            print (f'Experimental absorptance rmse, percentage {self.p}')
+            print ('Speed', laser_parameters_[i,0], 'Spacing', laser_parameters_[i,0], np.sqrt(mean_squared_error(target_absorptance, absorptance_[i])))
         
         plt.figure(figsize=(6,5))
-        for i in range(len(absorbance_)):
+        for i in range(len(absorptance_)):
 
-            # plt.plot(self.wavelengths, absorbance_[i,:], 'k-')
+            # plt.plot(self.wavelengths, absorptance_[i,:], 'k-')
             # lp = laser_parameters_[i]
             speed = laser_parameters_[i, 0]
             spacing = laser_parameters_[i, 1]
-            plt.plot(self.wavelengths, absorbance_[i,:], alpha=0.5, linewidth=3, label=r'%0.f $\upmu$m/s, %0.f $\upmu$m' % (speed, spacing))
+            plt.plot(self.wavelengths, absorptance_[i,:], alpha=0.5, linewidth=3, label=r'%0.f mm/s, %0.f $\upmu$m' % (speed, spacing))
 
             
             
-        # plt.plot(self.wavelengths, absorbance_[-1,:], label='Experiment')
+        # plt.plot(self.wavelengths, absorptance_[-1,:], label='Experiment')
         # lp_last = laser_parameters_[-1]
-        # plt.plot(self.wavelengths, absorbance_[-1,:], label=r'{speed} $\upmu$m/s, {spacing} $\upmu$m')
+        # plt.plot(self.wavelengths, absorptance_[-1,:], label=r'{speed} $\upmu$m/s, {spacing} $\upmu$m')
 
             
-        # for i in range(len(absorbance_curves)-1):
+        # for i in range(len(absorptance_curves)-1):
 
-        #     plt.plot(self.wavelengths, absorbance_curves[i,:]*100, 'r-')
+        #     plt.plot(self.wavelengths, absorptance_curves[i,:]*100, 'r-')
             
-        # plt.plot(self.wavelengths, absorbance_curves[-1,:]*100, 'r-', label='Prediction')
+        # plt.plot(self.wavelengths, absorptance_curves[-1,:]*100, 'r-', label='Prediction')
         
         
         plt.xlabel(r'Wavelength ($\upmu$m)')
-        plt.ylabel('Absorbance (\%)')
+        plt.ylabel('Absorptance (\%)')
+        plt.title('Experimental validation')
         plt.legend()
         # plt.title('%0.f \% train data, experimental validation' % percentage_)
         plt.title('%0.f' % percentage_ + '\% train data, experimental validation')
@@ -367,29 +388,42 @@ class inverseDesignAnalysis:
 
         plt.tight_layout()
         
-        plt.savefig(f'inverse_design_results/absorbance_curves_{percentage_}_model_result.pdf', dpi=400)
-        plt.savefig(f'inverse_design_results/absorbance_curves_{percentage_}_model_result.eps', dpi=400)
-        plt.savefig(f'inverse_design_results/absorbance_curves_{percentage_}_model_result.png', dpi=400)
+        plt.savefig(f'inverse_design_results/absorptance_curves_{percentage_}_model_result.pdf', dpi=400)
+        plt.savefig(f'inverse_design_results/absorptance_curves_{percentage_}_model_result.eps', dpi=400)
+        plt.savefig(f'inverse_design_results/absorptance_curves_{percentage_}_model_result.png', dpi=400)
         
         
         """Experimental data plot"""
         
-        laser_parameters_exp, absorbance_exp = self.experimental_dataset()
+        laser_parameters_exp, absorptance_exp = self.experimental_dataset()
+        
+        
+        laser_params_train, transmittance_values_train = self.train_data_t
+        laser_params_train, refl_values_train = self.train_data_r
+        
+        transmittance_train_p = transmittance_values_train[:int(self.p*len(transmittance_values_train))]
+        reflectance_train_p = refl_values_train[:int(self.p*len(refl_values_train))]
+        
+        laser_params_train = laser_params_train[:int(self.p*len(refl_values_train))]
+
+        
+        absorptance_values = 100 - transmittance_train_p - reflectance_train_p
+
                 
         plt.figure(figsize=(6,5))
-        contour = plt.scatter(laser_parameters_exp[:, 0], laser_parameters_exp[:,1], c=np.mean(absorbance_exp, axis=1), cmap='plasma')
-        plt.plot(laser_parameters_[:, 0], laser_parameters_[:,1], 'kx')#, label='Experiment')
+        contour = plt.scatter(laser_params_train[:, 0], laser_params_train[:,1], c=np.mean(absorptance_values, axis=1), cmap='plasma')
+        plt.plot(laser_parameters_[:, 0], laser_parameters_[:,1], color='black', marker='x', linestyle='')#, label='Experiment')
         
 
-        plt.plot(laser_parameters_sorted[:, 0], laser_parameters_sorted[:,1], 'rx')#, label='Prediction')
+        plt.plot(laser_parameters_sorted[:, 0], laser_parameters_sorted[:,1], color='cyan', marker='o', linestyle='')#, label='Prediction')
         plt.legend(loc='best', framealpha=0, fontsize=12)
 
         cbar = plt.colorbar(contour)
-        cbar.set_label('Mean absorbance (\%)')#, rotation=270, labelpad=15)
+        cbar.set_label('Mean absorptance (\%)')#, rotation=270, labelpad=15)
 
-        plt.xlabel(r'Speed ($\upmu$m/s)')
+        plt.xlabel(r'Speed (mm/s)')
         plt.ylabel(r'Spacing ($\upmu$m)')
-        plt.title(f'{percentage_}\% train data')
+        plt.title(f'{percentage_}\% train data (N$_M$ = {len(laser_params_train)})')
 
         ax = plt.gca()
 
@@ -403,16 +437,16 @@ class inverseDesignAnalysis:
         plt.savefig(f'inverse_design_results/laser_parameters_{percentage_}_model_result.png', dpi=400)
         
         
-k = 10 
+k = 20 
 laser_parameters_train = np.load('train_data/laser_parameters_train.npy')
-reflectance_train = np.load('train_data/reflectance_train.npy')[:, ::k]/100
-transmittance_train = np.load('train_data/transmittance_train.npy')[:, ::k]/100   
+reflectance_train = np.load('train_data/reflectance_train.npy')[:, ::k]#/100
+transmittance_train = np.load('train_data/transmittance_train.npy')[:, ::k]#/100   
 
 laser_parameters_test = np.load('test_data/laser_parameters_test.npy')
-reflectance_test = np.load('test_data/reflectance_test.npy')[:, ::k]/100   
-transmittance_test = np.load('test_data/transmittance_test.npy')[:, ::k]/100   
+reflectance_test = np.load('test_data/reflectance_test.npy')[:, ::k]#/100   
+transmittance_test = np.load('test_data/transmittance_test.npy')[:, ::k]#/100   
 
-wavelengths = np.load('data/wavelengths.npy')[::k]
+wavelengths = np.load('data/wavelength_calibrated.npy')[::k]
 
 
 train_data_r = (laser_parameters_train, reflectance_train)
