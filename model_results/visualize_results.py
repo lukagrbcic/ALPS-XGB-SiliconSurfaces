@@ -18,14 +18,16 @@ plt.rcParams.update({
 """plot predicted vs true curves"""
 """plot model based absorbance"""
 
+frac=1
+model='lr'
 
-wavelengths = np.load('../data/wavelength_calibrated.npy')[::20]
+wavelengths = np.load('../data/wavelength_calibrated.npy')[::40]
 
-predicted_transmittance = np.loadtxt('predicted_set_transmittance_1_xgb.dat')
-predicted_reflectance = np.loadtxt('predicted_set_reflectance_1_xgb.dat')
+predicted_transmittance = np.loadtxt(f'predicted_set_transmittance_{frac}_{model}.dat')
+predicted_reflectance = np.loadtxt(f'predicted_set_reflectance_{frac}_{model}.dat')
 
-test_transmittance = np.loadtxt('test_set_transmittance_1_xgb.dat')
-test_reflectance = np.loadtxt('test_set_reflectance_1_xgb.dat')
+test_transmittance = np.loadtxt(f'test_set_transmittance_{frac}_{model}.dat')
+test_reflectance = np.loadtxt(f'test_set_reflectance_{frac}_{model}.dat')
 
 predicted_absorbance = 100 - predicted_transmittance - predicted_reflectance
 predicted_absorbance_mean = np.mean(predicted_absorbance, axis=1)
@@ -48,14 +50,14 @@ plt.plot(test_absorbance_mean, reg_model(test_absorbance_mean), 'r-')
 
 
 
-plt.xticks([76, 78, 80, 82, 84, 86, 88, 90])
+plt.xticks([82, 84, 86, 88, 90])
 # plt.xticks([86, 90, 94])
 
-plt.yticks([76, 78, 80, 82, 84, 86, 88, 90])
+plt.yticks([82, 84, 86, 88, 90])
 # plt.yticks([86, 90, 94])
 
 
-plt.text(80, 86, f'$R^2$ = {r2_:.2f}', fontsize=18, bbox=dict(facecolor='white', alpha=0.5))
+plt.text(88, 84, f'$R^2$ = {r2_:.2f}', fontsize=18, bbox=dict(facecolor='white', alpha=0.5))
 
 plt.xlabel('Experimental mean absorptance (\%)')
 plt.ylabel('Predicted mean absorptance (\%)')
@@ -68,9 +70,13 @@ for axis in ['top', 'bottom', 'left', 'right']:
 
 plt.tight_layout()
 
-plt.savefig(f'r2_xgb_1.pdf', dpi=400)   
-plt.savefig(f'r2_xgb_1.png', dpi=400)   
-plt.savefig(f'r2_xgb_1.eps', dpi=400)   
+plt.savefig(f'r2_{model}_{frac}.pdf', dpi=400)   
+plt.savefig(f'r2_{model}_{frac}.png', dpi=400)   
+plt.savefig(f'r2_{model}_{frac}.eps', dpi=400)   
+
+# import sys
+# sys.exit()
+
 
 
 
@@ -132,47 +138,6 @@ plt.legend(handles=custom_patch, loc='upper right', fontsize=12)
 plt.savefig(f'rmse_pairs.pdf', dpi=400)   
 plt.savefig(f'rmse_pairs.png', dpi=400)   
 plt.savefig(f'rmse_pairs.eps', dpi=400)   
-
-import sys
-sys.exit()
-
-transmittance_model = joblib.load('../models/transmittance_model_full_train_test0.3_val0.1.pkl')
-reflectance_model = joblib.load('../models/reflectance_model_full_train_test0.3_val0.1.pkl')
-lb, ub = [110.,   1.], [300.,  42.]
-
-lower_bounds = np.array([lb])
-upper_bounds = np.array([ub])
-
-laser_parameters_pdp = np.random.uniform(lower_bounds, upper_bounds, size=(20000, 2))
-
-
-avg_transmittance = np.mean(transmittance_model.predict(laser_parameters_pdp), axis=1)
-avg_ref = np.mean(reflectance_model.predict(laser_parameters_pdp), axis=1)
-
-absorbance_mean = 1-avg_ref-avg_transmittance
-avg_abso = absorbance_mean*100
-
-plt.figure(figsize=(6,5))
-contour = plt.scatter(laser_parameters_pdp[:, 0], laser_parameters_pdp[:,1], c=avg_abso, cmap='plasma')
-cbar = plt.colorbar(contour)
-cbar.set_label('Mean absorbance (\%)')#, rotation=270, labelpad=15)
-
-# rect = Rectangle((299, 0), 201, 43, linewidth=1, edgecolor='none', facecolor='white')
-
-# plt.gca().add_patch(rect)
-plt.xlabel(r'Speed ($\upmu$m/s)')
-plt.ylabel(r'Spacing ($\upmu$m)')
-
-ax = plt.gca()
-
-for axis in ['top', 'bottom', 'left', 'right']:
-  ax.spines[axis].set_linewidth(2)
-
-plt.tight_layout()
-
-# plt.savefig(f'Figure3/forward_model_PDP.pdf', dpi=400)   
-# plt.savefig(f'Figure3/forward_model_PDP.png', dpi=400)   
-# plt.savefig(f'Figure3/forward_model_PDP.eps', dpi=400)   
 
 
 
