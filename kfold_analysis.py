@@ -350,11 +350,9 @@ class model_analysis:
                 plt.savefig(f'model_results/histogram_analysis_{data}_{self.fraction}_{self.model}.png', dpi=400)
                 plt.savefig(f'model_results/histogram_analysis_{data}_{self.fraction}_{self.model}.eps', dpi=400)
 
-
-            
+m = 40
 # data = 'transmittance'
 # input_train = np.load('train_data/laser_parameters_train.npy')
-# m = 20
 # output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
 # input_test = np.load('test_data/laser_parameters_test.npy')
@@ -367,7 +365,6 @@ class model_analysis:
 # data = 'reflectance'
 
 # input_train = np.load('train_data/laser_parameters_train.npy')
-# m = 20
 # output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 
 
@@ -380,7 +377,6 @@ class model_analysis:
             
 data = 'transmittance'
 input_train = np.load('train_data/laser_parameters_train.npy')
-m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 results = []
 
@@ -394,7 +390,6 @@ trans_results.plot_results(results)
 
 data = 'reflectance'
 input_train = np.load('train_data/laser_parameters_train.npy')
-m = 20
 output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
 results = []
 
@@ -418,7 +413,7 @@ def plot_absorbance_map_smooth(lb=[110., 1.], ub=[300., 42.],
     # [Same training code as before...]
     print("Training transmittance model...")
     input_train = np.load('train_data/laser_parameters_train.npy')
-    m = 20
+    m = 40
     output_train_trans = np.load('train_data/transmittance_train.npy')[:, ::m]
     
     trans_analysis = model_analysis('hist', 'transmittance', input_train, 
@@ -478,7 +473,6 @@ def plot_absorbance_map_smooth(lb=[110., 1.], ub=[300., 42.],
     print(f"  Std: {np.std(absorbance_mean):.2f}%")
     print(f"  Min: {np.min(absorbance_mean):.2f}%")
     print(f"  Max: {np.max(absorbance_mean):.2f}%")
-# After all your existing code, add:
 
 # # Plot absorbance map using trained models
 # print("\n" + "="*80)
