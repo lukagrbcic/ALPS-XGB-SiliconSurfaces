@@ -350,10 +350,9 @@ class model_analysis:
                 plt.savefig(f'model_results/histogram_analysis_{data}_{self.fraction}_{self.model}.png', dpi=400)
                 plt.savefig(f'model_results/histogram_analysis_{data}_{self.fraction}_{self.model}.eps', dpi=400)
 
-m = 40
 # data = 'transmittance'
 # input_train = np.load('train_data/laser_parameters_train.npy')
-# output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
+# output_train = np.load(f'train_data/{data}_train.npy')
 
 # input_test = np.load('test_data/laser_parameters_test.npy')
 # results = []
@@ -365,7 +364,7 @@ m = 40
 # data = 'reflectance'
 
 # input_train = np.load('train_data/laser_parameters_train.npy')
-# output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
+# output_train = np.load(f'train_data/{data}_train.npy')
 
 
 
@@ -377,7 +376,7 @@ m = 40
             
 data = 'transmittance'
 input_train = np.load('train_data/laser_parameters_train.npy')
-output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
+output_train = np.load(f'train_data/{data}_train.npy')
 results = []
 
 trans_results = model_analysis('hist', data, input_train, output_train, fraction=1, model='lr')
@@ -390,7 +389,7 @@ trans_results.plot_results(results)
 
 data = 'reflectance'
 input_train = np.load('train_data/laser_parameters_train.npy')
-output_train = np.load(f'train_data/{data}_train.npy')[:, ::m]
+output_train = np.load(f'train_data/{data}_train.npy')
 results = []
 
 
