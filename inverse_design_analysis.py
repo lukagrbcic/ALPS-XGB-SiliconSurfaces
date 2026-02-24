@@ -284,7 +284,7 @@ class inverseDesignAnalysis:
                 return epsilon, absorptance_eval.reshape(1,-1)
 
             test_full = ALPS(target=target_absorptance, 
-            max_evals=100, 
+            max_evals=400, 
             initial_sample_size=5, 
             model_batch_size=5, 
             lb=lower_bounds, 
@@ -437,16 +437,15 @@ class inverseDesignAnalysis:
         plt.savefig(f'inverse_design_results/laser_parameters_{percentage_}_model_result.png', dpi=400)
         
         
-k = 20 
 laser_parameters_train = np.load('train_data/laser_parameters_train.npy')
-reflectance_train = np.load('train_data/reflectance_train.npy')[:, ::k]#/100
-transmittance_train = np.load('train_data/transmittance_train.npy')[:, ::k]#/100   
+reflectance_train = np.load('train_data/reflectance_train.npy')
+transmittance_train = np.load('train_data/transmittance_train.npy')
 
 laser_parameters_test = np.load('test_data/laser_parameters_test.npy')
-reflectance_test = np.load('test_data/reflectance_test.npy')[:, ::k]#/100   
-transmittance_test = np.load('test_data/transmittance_test.npy')[:, ::k]#/100   
+reflectance_test = np.load('test_data/reflectance_test.npy') 
+transmittance_test = np.load('test_data/transmittance_test.npy') 
 
-wavelengths = np.load('data/wavelength_calibrated.npy')[::k]
+wavelengths = np.load('data/wavelength_calibrated.npy')
 
 
 train_data_r = (laser_parameters_train, reflectance_train)
@@ -456,7 +455,7 @@ test_data_r = (laser_parameters_test, reflectance_test)
 test_data_t = (laser_parameters_test, transmittance_test)
 
 
-p=1 #fraction of train dataset used, i.e. 1 = 100%
+p=0.5 #fraction of train dataset used, i.e. 1 = 100%
 n=5 #top n predictions
 
 test = inverseDesignAnalysis(train_data_r, test_data_r,
