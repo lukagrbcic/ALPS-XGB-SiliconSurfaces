@@ -48,14 +48,14 @@ class PlotData:
         for i in values:
             averages.append(np.mean(i))
         plt.figure(figsize=(6,5))
-        plt.scatter(param, averages, color='magenta')# color='#7B1B38')
+        plt.scatter(param, averages, color='magenta')#7B1B38')
         plt.ylim(73, 93)
         plt.xlabel(param_name + units)
         plt.ylabel('Mean absorptance (\%)')
         plt.tight_layout()
         self.save_plot(filename)
 
-    def plot_wavelength(self, param, param_name, filename, a=0.05, c='red'):
+    def plot_wavelength(self, param, param_name, filename, a=0.05, c='blue'):
         plt.figure(figsize=(6,5))
         for i in param:
             plt.plot(self.wavelength, i, alpha=a, color=c)
@@ -141,13 +141,12 @@ class PlotData:
 
 
 # Assuming that you have already loaded the data from .npy files
-k = 20 
+k = 40 
 laser_params = np.load('../data/laser_parameters_cut.npy')
-reflectance = np.load('../data/reflectance_calibrated.npy')[:, ::k]
-transmittance = np.load('../data/transmittance_calibrated.npy')[:, ::k]
-wavelength = np.load("../data/wavelength_calibrated.npy")[::k]
+reflectance = np.load('../data/reflectance_calibrated.npy')#[:, ::k]
+transmittance = np.load('../data/transmittance_calibrated.npy')#[:, ::k]
+wavelength = np.load("../data/wavelength_calibrated.npy")#[::k]
 plot_data = PlotData(laser_params, reflectance, transmittance, wavelength)
-
 
 laser_params = np.array([[160, 41],[270, 15],[220, 24],[140,42]])
 
@@ -159,7 +158,7 @@ plot_data.plot_one_to_many(100 - reflectance - transmittance, "one_to_many_absor
 # plot_data.plot_absorbance_at_0_83_mu_contour()
 
 # Wavelength Graphs
-# plot_data.plot_wavelength(reflectance, "Reflectance", "reflectance_wavelength")
+plot_data.plot_wavelength(reflectance, "Reflectance", "reflectance_wavelength")
 # plot_data.plot_wavelength(transmittance, "Transmittance", "transmittence_wavelength")
 # plot_data.plot_wavelength(100 - reflectance - transmittance, "Absorptance", "absorptance_wavelength")
 
@@ -170,6 +169,6 @@ plot_data.plot_one_to_many(100 - reflectance - transmittance, "one_to_many_absor
 
 # plot_data.plot_average_vs_param(transmittance, "Spacings", "Transmittence (\%)", "tramittance_spacings")
 # plot_data.plot_average_vs_param(reflectance, "Spacings", "Reflectance (\%)", "reflectance_spacings")
-#plot_data.plot_average_vs_param(100 - reflectance - transmittance, "Spacing", "Absorptance (\%)", "absorptance_spacings")
+# plot_data.plot_average_vs_param(100 - reflectance - transmittance, "Spacing", "Absorptance (\%)", "absorptance_spacing")
 
 # Contour Plots
