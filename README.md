@@ -1,5 +1,5 @@
 # Inverse design of silicon-based photonic surfaces with AI Laser Parameter Search and XGBoost
-Code and data for the manuscript "Inverse design of silicon-based photonic surfaces via femtosecond laser processing and extreme gradient boosting machine learning". Available on Arxiv:
+Code and data for the manuscript "Inverse design of silicon-based photonic surfaces via femtosecond laser processing and extreme gradient boosting machine learning".
 
 _______
 **DATA DESCRIPTION**
